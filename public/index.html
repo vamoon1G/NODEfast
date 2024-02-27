@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отправка URL для парсинга</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h2>Введите URL для парсинга</h2>
+    <form id="urlsForm">
+        <textarea id="urls" name="urls" rows="40" cols="125"></textarea><br>
+        <button type="button" onclick="sendUrls()">Отправить</button>
+    </form>
+
+    <script>
+        function sendUrls() {
+            const urls = document.getElementById('urls').value.split('\n').filter(Boolean); // Разбиваем текст по строкам и удаляем пустые
+            fetch('/process-urls', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ urls }),
+            })
+            .then(response => response.json())
+            .then(data => alert('Данные успешно обработаны'))
+            .catch(error => console.error('Ошибка:', error));
+        }
+    </script>
+</body>
+</html>
