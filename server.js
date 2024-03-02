@@ -115,7 +115,7 @@ async function processUrlsAndWriteToExcel(urls) {
         });
       } catch {
         console.error('Название продукта не найдено для', link);
-        productTitle = 'Название продукта не найдено'; // Или оставьте пустым
+        productTitle = 'Название продукта не найдено'; 
       }
   
       try {
@@ -125,7 +125,7 @@ async function processUrlsAndWriteToExcel(urls) {
         });
 
 
-        price = priceText.match(/\d+/g)?.join('') || 'Цена не найдена'; // Обновляем значение price
+        price = priceText.match(/\d+/g)?.join('') || 'Цена не найдена'; 
 
       } catch {
         console.error('Цена не найдена для', link);
