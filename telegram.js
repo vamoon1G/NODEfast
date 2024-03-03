@@ -20,7 +20,7 @@ bot.on('message', (msg) => {
     const text = msg.text;
 
 
-    const urls = text.split(/\s+/).filter(url => url.startsWith('http://') || url.startsWith('https://'));
+    const urls = text.split(/\s+/).filter(url => url.startsWith('http://') || url.startsWith('https://'));;
 
     if(urls.length > 0) {
 
@@ -113,35 +113,37 @@ async function processUrlsAndWriteToExcel(urls) {
 
   let browser;
   try {
-    const browser = await puppeteer.launch({
-      headless: true, // Запуск в headless режиме
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox', 
-      ],
-    });
-    const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    const browser = await puppeteer.launch({    
+       headless: true, 
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox', 
+    ],
+  });
+
+
+  const page = await browser.newPage();
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
   try {
-    await page.waitForFunction('document.querySelector(".categories__category-item_title") !== null', {timeout: 180000});
+
 
   let categoriesTitles = [];
 
   for (let link of urls) {
     let price = 'Цена не найдена'; 
+    const navigationPromise = page.waitForNavigation({waitUntil: 'networkidle0'});
     try {
       await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 60000 });
-      await page.waitForFunction('document.querySelector(".categories__category-item_title") !== null', {timeout: 180000});
-      console.log(page.url());
-      await page.waitForSelector('.categories__category-item_title' ,{timeout: 130000 }); 
+      await navigationPromise;
+      await page.waitForSelector('.categories__category-item_title'); 
   
 
       const categoryTitle = await page.evaluate(() => {
         const element = document.querySelector('.categories__category-item_title');
         return element ? element.textContent.trim() : 'Категория не найдена';
       });
-
+      
       let productTitle = '';
       try {
         await page.waitForSelector('.pdp-header__title.pdp-header__title_only-title', { timeout: 5000 }); 
@@ -167,7 +169,7 @@ async function processUrlsAndWriteToExcel(urls) {
         console.error('Цена не найдена для', link);
 
       }
-      
+
 
       const { brand, manufacturerArticle } = await page.evaluate(() => {
         const items = Array.from(document.querySelectorAll('.pdp-specs__item'));
