@@ -113,7 +113,13 @@ async function processUrlsAndWriteToExcel(urls) {
 
   let browser;
   try {
-    const browser = await puppeteer.launch({ headless: true , args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    const browser = await puppeteer.launch({
+      headless: true, // Запуск в headless режиме
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox', 
+      ],
+    });
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
@@ -126,9 +132,10 @@ async function processUrlsAndWriteToExcel(urls) {
     let price = 'Цена не найдена'; 
     try {
       await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 60000 });
-          
+      await page.waitForFunction('document.querySelector(".categories__category-item_title") !== null');
 
-      await page.waitForSelector('.categories__category-item_title' ,{timeout: 60000 }); 
+
+      await page.waitForSelector('.categories__category-item_title' ,{timeout: 130000 }); 
   
 
       const categoryTitle = await page.evaluate(() => {
