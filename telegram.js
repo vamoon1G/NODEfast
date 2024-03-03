@@ -124,7 +124,7 @@ async function processUrlsAndWriteToExcel(urls) {
   for (let link of urls) {
     let price = 'Цена не найдена'; 
     try {
-      await page.goto(url, { waitUntil: 'networkidle0' });
+      await page.goto(link, { waitUntil: 'networkidle0' });
 
 
       await page.waitForSelector('.categories__category-item_title', { timeout: 0 }); // Пример селектора
@@ -205,7 +205,6 @@ async function processUrlsAndWriteToExcel(urls) {
   try {
     await Promise.all([
       page.waitForNavigation(), // Дождаться завершения навигации
-      page.click('selectorForLinkOrButton'), // Действие, вызывающее навигацию
     ]);
   } catch (error) {
     console.error('Ошибка при выполнении навигации:', error);
