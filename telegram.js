@@ -124,11 +124,16 @@ async function processUrlsAndWriteToExcel(urls) {
   for (let link of urls) {
     let price = 'Цена не найдена'; 
     try {
-      await page.goto(link, { waitUntil: 'networkidle0', timeout: 60000 });
-      const response = await page.goto(url, { waitUntil: 'networkidle0' });
-      if (!response.ok()) {
-          throw new Error(`Не удалось загрузить URL: ${url}, статус: ${response.status()}`);
-      }
+      await page.goto(url, { waitUntil: 'networkidle0' });
+
+
+      await page.waitForSelector('.categories__category-item_title', { timeout: 0 }); // Пример селектора
+      await page.waitForSelector('.pdp-header__title.pdp-header__title_only-title', { timeout: 0 }); 
+      await page.waitForSelector('.sales-block-offer-price__price-final', { timeout: 0 }); 
+      await page.waitForSelector('.pdp-specs__item-name', { timeout: 0 }); 
+      await page.waitForSelector('.pdp-specs__item-value', { timeout: 0 }); 
+
+
 
       const isElementPresent = await page.$('.categories__category-item_title') !== null;
       if (isElementPresent) {
