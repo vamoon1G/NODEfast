@@ -125,7 +125,10 @@ async function processUrlsAndWriteToExcel(urls) {
     let price = 'Цена не найдена'; 
     try {
       await page.goto(link, { waitUntil: 'networkidle0', timeout: 60000 });
-          
+      const response = await page.goto(url, { waitUntil: 'networkidle0' });
+      if (!response.ok()) {
+          throw new Error(`Не удалось загрузить URL: ${url}, статус: ${response.status()}`);
+      }
 
       const isElementPresent = await page.$('.categories__category-item_title') !== null;
       if (isElementPresent) {
