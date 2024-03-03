@@ -193,6 +193,16 @@ async function processUrlsAndWriteToExcel(urls) {
     }
   }
 
+
+  try {
+    await Promise.all([
+      page.waitForNavigation(), // Дождаться завершения навигации
+      page.click('selectorForLinkOrButton'), // Действие, вызывающее навигацию
+    ]);
+  } catch (error) {
+    console.error('Ошибка при выполнении навигации:', error);
+  }
+
   await writeToExcel(categoriesTitles, './Мегамаркет excel фид.xlsx');
   await browser.close();
 } catch (error) {
