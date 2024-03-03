@@ -124,17 +124,19 @@ async function processUrlsAndWriteToExcel(urls) {
   for (let link of urls) {
     let price = 'Цена не найдена'; 
     try {
-      await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.goto(link, { waitUntil: 'networkidle0', timeout: 60000 });
           
 
-      await page.waitForSelector('.categories__category-item_title'); 
-  
+      const isElementPresent = await page.$('.categories__category-item_title') !== null;
+      if (isElementPresent) {
 
       const categoryTitle = await page.evaluate(() => {
         const element = document.querySelector('.categories__category-item_title');
         return element ? element.textContent.trim() : 'Категория не найдена';
       });
-  
+    } else {
+      console.log(`Произошла ошибка при обработке категории`);
+  }
 
       let productTitle = '';
       try {
