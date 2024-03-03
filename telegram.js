@@ -132,7 +132,7 @@ async function processUrlsAndWriteToExcel(urls) {
     let price = 'Цена не найдена'; 
     try {
       await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 60000 });
-      await page.waitForFunction('document.querySelector(".categories__category-item_title") !== null');
+      await page.waitForFunction('document.querySelector(".categories__category-item_title") !== null', {timeout: 180000});
       console.log(page.url());
       await page.waitForSelector('.categories__category-item_title' ,{timeout: 130000 }); 
   
