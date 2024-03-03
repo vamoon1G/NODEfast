@@ -64,11 +64,6 @@ app.listen(port, () => {
 });
 
 
-
-
-
-
-
 async function writeToExcel(data, filePath) {
   const workbook = new ExcelJS.Workbook(); 
   try {
@@ -136,14 +131,24 @@ async function processUrlsAndWriteToExcel(urls) {
     try {
       await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await navigationPromise;
-      await page.waitForSelector('.categories__category-item_title'); 
-  
 
-      const categoryTitle = await page.evaluate(() => {
+
+     
+  
+      let categoryTitle = '';
+      try {  
+        await page.waitForSelector('.categories__category-item_title', { timeout: 5000 }); 
+        categoryTitle = await page.evaluate(() => {
         const element = document.querySelector('.categories__category-item_title');
         return element ? element.textContent.trim() : 'Категория не найдена';
       });
-      
+    } catch {
+      console.error('Категория продукта не найдено для', link);
+      productTitle = 'Категория продукта не найдено'; 
+    }
+
+
+      await navigationPromise;
       let productTitle = '';
       try {
         await page.waitForSelector('.pdp-header__title.pdp-header__title_only-title', { timeout: 5000 }); 
@@ -155,7 +160,7 @@ async function processUrlsAndWriteToExcel(urls) {
         console.error('Название продукта не найдено для', link);
         productTitle = 'Название продукта не найдено'; 
       }
-  
+
       try {
         let priceText = await page.evaluate(() => {
           const priceElement = document.querySelector('.sales-block-offer-price__price-final');
