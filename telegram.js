@@ -113,7 +113,7 @@ async function processUrlsAndWriteToExcel(urls) {
 
   let browser;
   try {
-    const browser = await puppeteer.launch({ headless: true , args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
 
   try {
@@ -124,24 +124,16 @@ async function processUrlsAndWriteToExcel(urls) {
   for (let link of urls) {
     let price = 'Цена не найдена'; 
     try {
-      await page.goto(link, { waitUntil: 'networkidle0' });
+      await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 60000 });
+          
 
-      await page.waitForSelector('.categories__category-item_title', { timeout: 0 }); // Пример селектора
-      await page.waitForSelector('.pdp-header__title.pdp-header__title_only-title', { timeout: 0 }); 
-      await page.waitForSelector('.sales-block-offer-price__price-final', { timeout: 0 }); 
-      await page.waitForSelector('.pdp-specs__item-name', { timeout: 0 }); 
-      await page.waitForSelector('.pdp-specs__item-value', { timeout: 0 }); 
-
-      const isElementPresent = await page.$('.categories__category-item_title') !== null;
-      if (isElementPresent) {
+      await page.waitForSelector('.categories__category-item_title'); 
+  
 
       const categoryTitle = await page.evaluate(() => {
         const element = document.querySelector('.categories__category-item_title');
         return element ? element.textContent.trim() : 'Категория не найдена';
       });
-    } else {
-      console.log(`Произошла ошибка при обработке категории`);
-  }
 
       let productTitle = '';
       try {
@@ -196,15 +188,6 @@ async function processUrlsAndWriteToExcel(urls) {
     } catch (error) {
       console.error(`Произошла ошибка при обработке ${link}:`, error);
     }
-  }
-
-
-  try {
-    await Promise.all([
-      page.waitForNavigation(), // Дождаться завершения навигации
-    ]);
-  } catch (error) {
-    console.error('Ошибка при выполнении навигации:', error);
   }
 
   await writeToExcel(categoriesTitles, './Мегамаркет excel фид.xlsx');
