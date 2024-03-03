@@ -109,7 +109,7 @@ async function processUrlsAndWriteToExcel(urls) {
   let browser;
   try {
     const browser = await puppeteer.launch({    
-       headless: true
+       headless: false
   });
 
 
