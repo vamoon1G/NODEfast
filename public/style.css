@@ -9,6 +9,16 @@ body {
     height: 100vh;
 }
 
+.wq{
+    background-color: aquamarine;
+    border-radius: 20px;
+    border: none;
+    font-size: 10px;
+    padding: 10px;
+    font-family: Arial, Helvetica, sans-serif;
+    
+}
+
 #urlsForm {
     background-color: #fff;
     padding: 30px;

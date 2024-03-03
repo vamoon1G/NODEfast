@@ -204,7 +204,7 @@ async function processUrlsAndWriteToExcel(urls) {
     }
   }
 
-  await writeToExcel(categoriesTitles, './Мегамаркет excel фид.xlsx');
+  await writeToExcel(categoriesTitles, 'public/Мегамаркет excel фид.xlsx');
   await browser.close();
 } catch (error) {
   console.error(`Произошла ошибка при обработке URL:`, error);
