@@ -126,6 +126,8 @@ async function processUrlsAndWriteToExcel(urls) {
   let categoriesTitles = [];
 
   for (let link of urls) {
+    let categoryTitle = ''; 
+    let productTitle = '';
     let price = 'Цена не найдена'; 
     const navigationPromise = page.waitForNavigation({waitUntil: 'networkidle0'});
     try {
@@ -135,7 +137,7 @@ async function processUrlsAndWriteToExcel(urls) {
 
      
   
-      let categoryTitle = '';
+
       try {  
         await page.waitForSelector('.categories__category-item_title', { timeout: 5000 }); 
         categoryTitle = await page.evaluate(() => {
@@ -149,7 +151,7 @@ async function processUrlsAndWriteToExcel(urls) {
 
 
       await navigationPromise;
-      let productTitle = '';
+
       try {
         await page.waitForSelector('.pdp-header__title.pdp-header__title_only-title', { timeout: 5000 }); 
         productTitle = await page.evaluate(() => {
@@ -160,22 +162,19 @@ async function processUrlsAndWriteToExcel(urls) {
         console.error('Название продукта не найдено для', link);
         productTitle = 'Название продукта не найдено'; 
       }
-
+      await navigationPromise;
       try {
         let priceText = await page.evaluate(() => {
           const priceElement = document.querySelector('.sales-block-offer-price__price-final');
           return priceElement ? priceElement.textContent.trim() : 'Цена не найдена';
         });
-
-
         price = priceText.match(/\d+/g)?.join('') || 'Цена не найдена'; 
-
       } catch {
         console.error('Цена не найдена для', link);
 
       }
 
-
+      await navigationPromise;
       const { brand, manufacturerArticle } = await page.evaluate(() => {
         const items = Array.from(document.querySelectorAll('.pdp-specs__item'));
         const data = { brand: '', manufacturerArticle: '' };
@@ -197,6 +196,7 @@ async function processUrlsAndWriteToExcel(urls) {
   
         return data;
       });
+      await navigationPromise;
 
       categoriesTitles.push({ categoryTitle, productTitle, brand, manufacturerArticle, price });
     } catch (error) {
