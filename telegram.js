@@ -124,7 +124,7 @@ async function processUrlsAndWriteToExcel(urls) {
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
   try {
-
+    await page.waitForFunction('document.querySelector(".categories__category-item_title") !== null');
 
   let categoriesTitles = [];
 
@@ -133,8 +133,7 @@ async function processUrlsAndWriteToExcel(urls) {
     try {
       await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await page.waitForFunction('document.querySelector(".categories__category-item_title") !== null');
-
-
+      console.log(page.url());
       await page.waitForSelector('.categories__category-item_title' ,{timeout: 130000 }); 
   
 
