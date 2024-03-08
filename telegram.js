@@ -24,42 +24,43 @@ const allowedUserIds = [1190709922,6358500758];
 const MY_TELEGRAM_ID = '1190709922';
 
 
-// Глобальная переменная для хранения текущего состояния
 let awaitingCaptchaInput = false;
-let currentChatId = null;
+let page; 
 
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
-  const userId = msg.from.id;
+  const userId = msg.from.id.toString();
+  const captchaInput = msg.text;
 
-  // Убедитесь, что это сообщение от вас и содержит ответ на капчу
-  if (userId === MY_TELEGRAM_ID&& awaitingCaptchaInput) {
-    const captchaInput = msg.text;
-    awaitingCaptchaInput = false; // Сброс флага ожидания ввода
-
+  if (userId === MY_TELEGRAM_ID && awaitingCaptchaInput) {
     try {
-      // Введите капчу на веб-странице и отправьте форму
-      const page = await browser.newPage();
-      await page.goto(link);
+      if (!page) throw new Error("Страница не инициализирована");
 
-      await page.type('#input-captcha', captchaInput);
-      await page.click('#submit-captcha-button');
+      await page.type('.input-captcha', captchaInput); // Ввод капчи
+      await page.click('.btn.btn-submit'); // Нажатие кнопки "Отправить"
+      await page.waitForNavigation(); // Ожидание перехода на следующую страницу
 
-      // Ждем следующую страницу или какой-то индикатор, что капча принята
-      await page.waitForNavigation();
-
-      // Обработка после ввода капчи
       console.log('Капча введена и отправлена.');
+      await bot.sendMessage(chatId, 'Капча введена и отправлена.');
+
+      awaitingCaptchaInput = false; // Сброс ожидания ввода
+
+      // Отправляем подтверждающий скриншот
+      const confirmationScreenshotBuffer = await page.screenshot();
+      await bot.sendPhoto(MY_TELEGRAM_ID, confirmationScreenshotBuffer, {
+          caption: "Страница после ввода капчи:"
+      }); // Сброс флага ожидания после успешного ввода
 
       // Закрыть страницу после завершения работы
       await page.close();
     } catch (error) {
       console.error('Ошибка при вводе капчи:', error);
-      // Сообщить об ошибке в Telegram
       await bot.sendMessage(chatId, 'Произошла ошибка при вводе капчи.');
+      awaitingCaptchaInput = false; // Сброс флага в случае ошибки
     }
   }
 });
+
 
 
 
@@ -243,10 +244,11 @@ async function processUrlsAndWriteToExcel(urls, price) {
         productTitle = 'Название продукта не найдено'; 
 
 
-      const captchaScreenshotBuffer = await page.screenshot();
-      await bot.sendPhoto(MY_TELEGRAM_ID, captchaScreenshotBuffer, {
-        caption: 'Введите капчу:'
-      });
+        const captchaScreenshotBuffer = await page.screenshot();
+        await bot.sendPhoto(MY_TELEGRAM_ID, captchaScreenshotBuffer, {
+            caption: 'Введите капчу:'
+        });
+        awaitingCaptchaInput = true; 
       }
 
       await navigationPromise;
