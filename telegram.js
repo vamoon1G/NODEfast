@@ -194,7 +194,7 @@ async function processUrlsAndWriteToExcel(urls, price) {
         console.error('Название продукта не найдено для', link);
         productTitle = 'Название продукта не найдено'; 
 
-        const screenshotPath = `s/screenshot.png`; // Генерируем уникальное имя файла
+        const screenshotPath = `public/screenshot.png`; // Генерируем уникальное имя файла
         await page.screenshot({ path: screenshotPath });
         console.log(`Снимок экрана сохранен: ${screenshotPath}`);
       }
