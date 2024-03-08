@@ -47,15 +47,7 @@ async function initBrowserAndPage() {
 })();
 
 
-// Пример функции, которая вызывается, когда название продукта не найдено
-async function handleCaptcha() {
-    const screenshotBuffer = await page.screenshot();
-    await bot.sendPhoto(MY_TELEGRAM_ID, screenshotBuffer, {
-        caption: 'Введите капчу:'
-    });
-    awaitingCaptchaInput = true; 
-    currentCaptchaPageUrl = page.url(); 
-}
+
 
 // Обработка сообщений от пользователя в Telegram
 bot.on('message', async (msg) => {
@@ -256,7 +248,6 @@ async function processUrlsAndWriteToExcel(urls, price) {
       await navigationPromise;
 
       try {
-        page = await browser.newPage();
         await page.waitForSelector('.pdp-header__title.pdp-header__title_only-title', { timeout: 5000 }); 
         productTitle = await page.evaluate(() => {
           const element = document.querySelector('.pdp-header__title.pdp-header__title_only-title');
@@ -267,7 +258,12 @@ async function processUrlsAndWriteToExcel(urls, price) {
         productTitle = 'Название продукта не найдено'; 
 
 
-        await handleCaptcha();
+        const screenshotBuffer = await page.screenshot();
+        await bot.sendPhoto(MY_TELEGRAM_ID, screenshotBuffer, {
+            caption: 'Введите капчу:'
+        });
+        awaitingCaptchaInput = true; 
+        currentCaptchaPageUrl = page.url(); 
       }
 
       await navigationPromise;
