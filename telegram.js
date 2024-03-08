@@ -209,30 +209,7 @@ async function processUrlsAndWriteToExcel(urls, price) {
     let categoryTitle = ''; 
     let productTitle = '';
 
-    try {
-      // Ваш новый код поиска названия продукта и отправки капчи
-      const productTitleSelector = '.pdp-header__title.pdp-header__title_only-title';
-      await page.waitForSelector(productTitleSelector, { timeout: 5000 });
-      productTitle = await page.evaluate(selector => {
-        const element = document.querySelector(selector);
-        return element ? element.innerText.trim() : null;
-      }, productTitleSelector);
 
-      if (productTitle) {
-        console.log(`Название продукта: ${productTitle}`);
-        // Дальнейшие действия, если название найдено
-        // В этой части кода, скорее всего, будет логика по сбору дополнительных данных о продукте
-      } else {
-        throw new Error('Название продукта не найдено.');
-      }
-    } catch (error) {
-      console.error(error.message);
-      const captchaScreenshotBuffer = await page.screenshot();
-      await bot.sendPhoto(MY_TELEGRAM_ID, captchaScreenshotBuffer, {
-        caption: 'Введите капчу:'
-      });
-
-    }
 
 
     const navigationPromise = page.waitForNavigation({waitUntil: 'networkidle0'});
@@ -265,7 +242,11 @@ async function processUrlsAndWriteToExcel(urls, price) {
         console.error('Название продукта не найдено для', link);
         productTitle = 'Название продукта не найдено'; 
 
-       
+
+      const captchaScreenshotBuffer = await page.screenshot();
+      await bot.sendPhoto(MY_TELEGRAM_ID, captchaScreenshotBuffer, {
+        caption: 'Введите капчу:'
+      });
       }
 
       await navigationPromise;
