@@ -27,23 +27,29 @@ const MY_TELEGRAM_ID = '1190709922';
 let awaitingCaptchaInput = false;
 let page; 
 
-
+let browser;
 let currentCaptchaPageUrl = ''; // URL страницы, для которой требуется ввод капчи
 
 // Инициализация Puppeteer и открытие новой страницы
 async function initBrowserAndPage() {
-  console.log('Браузер инициализирован');
-    const browser = await puppeteer.launch({
+  try {
+    browser = await puppeteer.launch({
       executablePath: '/usr/bin/google-chrome',
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
-    const page = await browser.newPage();
+    page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36');
-
+    console.log('Браузер и страница успешно инициализированы.');
+  } catch (error) {
+    console.error('Ошибка при инициализации браузера:', error);
+  }
 }
+
+
 (async () => {
   await initBrowserAndPage();
+
 })();
 
 
