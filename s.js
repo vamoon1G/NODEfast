@@ -1,23 +1,35 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
+const path = require('path');
 
 (async () => {
-  const browser = await puppeteer.launch({headless:true});
-  const page = await browser.newPage();
-  await page.goto('https://megamarket.ru/catalog/details/setevoy-perforator-sds-plus-makita-hr2470-100000107707/spec/#?details_block=spec&related_search=макта%20перфоратор%20hr2470', { waitUntil: 'networkidle0' });
-
-  // Ожидание элемента на странице
+  try {
+    const browser = await puppeteer.launch({headless: true});
+    const page = await browser.newPage();
 
 
-  // Запись содержимого страницы в файл
-  const pageContent = await page.content();
-  fs.writeFileSync('pageContent.html', pageContent);
+    const url = 'https://megamarket.ru/catalog/details/setevoy-perforator-sds-plus-makita-hr2470-100000107707/spec/#?details_block=spec&related_search=макта%20перфоратор%20hr2470';
+    await page.goto(url, { waitUntil: 'networkidle0' });
 
-  // Сохранение скриншота страницы
-  await page.screenshot({ path: 'screenshot.png' });
+    
+    const outputPath = 's/';
 
-  // Продолжение вашего скрипта...
-  // Например, извлечение данных с помощью page.$eval или page.evaluate
 
-  await browser.close();
+    if (!fs.existsSync(outputPath)) {
+      fs.mkdirSync(outputPath, { recursive: true });
+    }
+
+    // Запись содержимого страницы в файл
+    const pageContent = await page.content();
+    fs.writeFileSync(path.join(outputPath, 'pageContent.html'), pageContent);
+
+    // Сохранение скриншота страницы
+    await page.screenshot({ path: path.join(outputPath, 'screenshot.png') });
+
+    // Ваши дальнейшие действия...
+
+    await browser.close();
+  } catch (error) {
+    console.error('Произошла ошибка:', error);
+  }
 })();
