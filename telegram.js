@@ -7,8 +7,11 @@ const app = express();
 const port = 3000;
 
 
-app.use(express.json());
 
+
+
+
+app.use(express.json());
 
 app.use(express.static('public'));
 
@@ -18,11 +21,53 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 const bot = new TelegramBot(process.env.TOKEN , { polling: true });
 const userStates = {}; 
 const allowedUserIds = [1190709922,6358500758];
+const MY_TELEGRAM_ID = '1190709922';
+
+
+// Глобальная переменная для хранения текущего состояния
+let awaitingCaptchaInput = false;
+let currentChatId = null;
+
+bot.on('message', async (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+
+  // Убедитесь, что это сообщение от вас и содержит ответ на капчу
+  if (userId === MY_TELEGRAM_ID&& awaitingCaptchaInput) {
+    const captchaInput = msg.text;
+    awaitingCaptchaInput = false; // Сброс флага ожидания ввода
+
+    try {
+      // Введите капчу на веб-странице и отправьте форму
+      const page = await browser.newPage();
+      await page.goto(link);
+
+      await page.type('#input-captcha', captchaInput);
+      await page.click('#submit-captcha-button');
+
+      // Ждем следующую страницу или какой-то индикатор, что капча принята
+      await page.waitForNavigation();
+
+      // Обработка после ввода капчи
+      console.log('Капча введена и отправлена.');
+
+      // Закрыть страницу после завершения работы
+      await page.close();
+    } catch (error) {
+      console.error('Ошибка при вводе капчи:', error);
+      // Сообщить об ошибке в Telegram
+      await bot.sendMessage(chatId, 'Произошла ошибка при вводе капчи.');
+    }
+  }
+});
+
+
 
 bot.on('message', async (msg) => { 
   const chatId = msg.chat.id;
   const text = msg.text;
   const userId = msg.from.id;
+
 
 
   if (!allowedUserIds.includes(userId)) {
@@ -164,6 +209,32 @@ async function processUrlsAndWriteToExcel(urls, price) {
     let categoryTitle = ''; 
     let productTitle = '';
 
+    try {
+      // Ваш новый код поиска названия продукта и отправки капчи
+      const productTitleSelector = '.pdp-header__title.pdp-header__title_only-title';
+      await page.waitForSelector(productTitleSelector, { timeout: 5000 });
+      productTitle = await page.evaluate(selector => {
+        const element = document.querySelector(selector);
+        return element ? element.innerText.trim() : null;
+      }, productTitleSelector);
+
+      if (productTitle) {
+        console.log(`Название продукта: ${productTitle}`);
+        // Дальнейшие действия, если название найдено
+        // В этой части кода, скорее всего, будет логика по сбору дополнительных данных о продукте
+      } else {
+        throw new Error('Название продукта не найдено.');
+      }
+    } catch (error) {
+      console.error(error.message);
+      const captchaScreenshotBuffer = await page.screenshot();
+      await bot.sendPhoto(YOUR_TELEGRAM_CHAT_ID, captchaScreenshotBuffer, {
+        caption: 'Введите капчу:'
+      });
+
+    }
+
+
     const navigationPromise = page.waitForNavigation({waitUntil: 'networkidle0'});
     try {
       await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -194,9 +265,7 @@ async function processUrlsAndWriteToExcel(urls, price) {
         console.error('Название продукта не найдено для', link);
         productTitle = 'Название продукта не найдено'; 
 
-        const screenshotPath = `public/screenshot.png`; // Генерируем уникальное имя файла
-        await page.screenshot({ path: screenshotPath });
-        console.log(`Снимок экрана сохранен: ${screenshotPath}`);
+       
       }
 
       await navigationPromise;
