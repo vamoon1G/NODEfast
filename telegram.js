@@ -27,38 +27,57 @@ const MY_TELEGRAM_ID = '1190709922';
 let awaitingCaptchaInput = false;
 let page; 
 
+
+let currentCaptchaPageUrl = ''; // URL страницы, для которой требуется ввод капчи
+
+// Инициализация Puppeteer и открытие новой страницы
+async function initBrowserAndPage() {
+    const browser = await puppeteer.launch({
+      executablePath: '/usr/bin/google-chrome',
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36');
+
+}
+
+initBrowserAndPage().then(() => console.log('Браузер инициализирован'));
+
+// Пример функции, которая вызывается, когда название продукта не найдено
+async function handleCaptcha() {
+    const screenshotBuffer = await page.screenshot();
+    await bot.sendPhoto(MY_TELEGRAM_ID, screenshotBuffer, {
+        caption: 'Введите капчу:'
+    });
+    awaitingCaptchaInput = true; // Теперь ожидаем ввода капчи
+    currentCaptchaPageUrl = page.url(); // Сохраняем URL текущей страницы
+}
+
+// Обработка сообщений от пользователя в Telegram
 bot.on('message', async (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id.toString();
-  const captchaInput = msg.text;
+    const chatId = msg.chat.id;
+    const userId = msg.from.id.toString(); // Преобразование ID пользователя в строку для сравнения
+    const text = msg.text;
 
-  if (userId === MY_TELEGRAM_ID && awaitingCaptchaInput) {
-    try {
-      if (!page) throw new Error("Страница не инициализирована");
+    if (userId === MY_TELEGRAM_ID && awaitingCaptchaInput) {
+        awaitingCaptchaInput = false; // Сбрасываем флаг ожидания ввода капчи
+        try {
+            await page.goto(currentCaptchaPageUrl); // Возвращаемся на страницу с капчей
+            await page.type('.input-captcha', text); // Вводим капчу
+            await page.click('.btn.btn-submit'); // Нажимаем кнопку отправки
+            await page.waitForNavigation(); // Ожидаем перехода на следующую страницу
 
-      await page.type('.input-captcha', captchaInput); // Ввод капчи
-      await page.click('.btn.btn-submit'); // Нажатие кнопки "Отправить"
-      await page.waitForNavigation(); // Ожидание перехода на следующую страницу
-
-      console.log('Капча введена и отправлена.');
-      await bot.sendMessage(chatId, 'Капча введена и отправлена.');
-
-      awaitingCaptchaInput = false; // Сброс ожидания ввода
-
-      // Отправляем подтверждающий скриншот
-      const confirmationScreenshotBuffer = await page.screenshot();
-      await bot.sendPhoto(MY_TELEGRAM_ID, confirmationScreenshotBuffer, {
-          caption: "Страница после ввода капчи:"
-      }); // Сброс флага ожидания после успешного ввода
-
-      // Закрыть страницу после завершения работы
-      await page.close();
-    } catch (error) {
-      console.error('Ошибка при вводе капчи:', error);
-      await bot.sendMessage(chatId, 'Произошла ошибка при вводе капчи.');
-      awaitingCaptchaInput = false; // Сброс флага в случае ошибки
+            const confirmationScreenshotBuffer = await page.screenshot();
+            await bot.sendPhoto(MY_TELEGRAM_ID, confirmationScreenshotBuffer, {
+                caption: "Страница после ввода капчи:"
+            });
+            console.log('Капча успешно введена и страница перезагружена.');
+        } catch (error) {
+            console.error('Ошибка при обработке капчи:', error);
+            await bot.sendMessage(chatId, 'Произошла ошибка при обработке капчи.');
+        }
     }
-  }
 });
 
 
@@ -244,11 +263,7 @@ async function processUrlsAndWriteToExcel(urls, price) {
         productTitle = 'Название продукта не найдено'; 
 
 
-        const captchaScreenshotBuffer = await page.screenshot();
-        await bot.sendPhoto(MY_TELEGRAM_ID, captchaScreenshotBuffer, {
-            caption: 'Введите капчу:'
-        });
-        awaitingCaptchaInput = true; 
+        await handleCaptcha();
       }
 
       await navigationPromise;
