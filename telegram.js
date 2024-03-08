@@ -32,6 +32,7 @@ let currentCaptchaPageUrl = ''; // URL страницы, для которой �
 
 // Инициализация Puppeteer и открытие новой страницы
 async function initBrowserAndPage() {
+  console.log('Браузер инициализирован');
     const browser = await puppeteer.launch({
       executablePath: '/usr/bin/google-chrome',
       headless: true,
@@ -41,8 +42,8 @@ async function initBrowserAndPage() {
     await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36');
 
 }
+await initBrowserAndPage();
 
-initBrowserAndPage().then(() => console.log('Браузер инициализирован'));
 
 // Пример функции, которая вызывается, когда название продукта не найдено
 async function handleCaptcha() {
