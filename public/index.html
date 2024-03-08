@@ -12,7 +12,7 @@
         <textarea id="urls" name="urls" rows="40" cols="125"></textarea><br>
         <button type="button" onclick="sendUrls()">Отправить</button>
     </form>
-    <a href="Мегамаркет excel фид.xlsx" download class="wq">Скачать файл excel</a>
+    <a href="МегаМаркет excel фид.xlsx" download class="wq">Скачать файл excel</a>
     <script>
         function sendUrls() {
             const urls = document.getElementById('urls').value.split('\n').filter(Boolean); // Разбиваем текст по строкам и удаляем пустые
