@@ -41,7 +41,7 @@ async function initBrowserAndPage() {
     await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36');
 
 }
-
+await initBrowserAndPage();
 initBrowserAndPage().then(() => console.log('Браузер инициализирован'));
 
 // Пример функции, которая вызывается, когда название продукта не найдено
@@ -50,8 +50,8 @@ async function handleCaptcha() {
     await bot.sendPhoto(MY_TELEGRAM_ID, screenshotBuffer, {
         caption: 'Введите капчу:'
     });
-    awaitingCaptchaInput = true; // Теперь ожидаем ввода капчи
-    currentCaptchaPageUrl = page.url(); // Сохраняем URL текущей страницы
+    awaitingCaptchaInput = true; 
+    currentCaptchaPageUrl = page.url(); 
 }
 
 // Обработка сообщений от пользователя в Telegram
@@ -253,6 +253,7 @@ async function processUrlsAndWriteToExcel(urls, price) {
       await navigationPromise;
 
       try {
+        page = await browser.newPage();
         await page.waitForSelector('.pdp-header__title.pdp-header__title_only-title', { timeout: 5000 }); 
         productTitle = await page.evaluate(() => {
           const element = document.querySelector('.pdp-header__title.pdp-header__title_only-title');
