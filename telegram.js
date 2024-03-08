@@ -228,7 +228,7 @@ async function processUrlsAndWriteToExcel(urls, price) {
     } catch (error) {
       console.error(error.message);
       const captchaScreenshotBuffer = await page.screenshot();
-      await bot.sendPhoto(YOUR_TELEGRAM_CHAT_ID, captchaScreenshotBuffer, {
+      await bot.sendPhoto(MY_TELEGRAM_ID, captchaScreenshotBuffer, {
         caption: 'Введите капчу:'
       });
 
