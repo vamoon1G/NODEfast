@@ -3,31 +3,32 @@ const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs');
 
-// Токен Telegram бота
+
 const token = '6616203077:AAGem7vScx0jhgpYa4D65akfYvVXeekWr6Y';
 const bot = new TelegramBot(token, { polling: true });
 
-// Путь к существующему файлу Excel
+const userStates = {};
+
 const excelFilePath = path.join(__dirname, 'f.xlsx');
 
 async function appendToExcel(url, price) {
     const workbook = new ExcelJS.Workbook();
     try {
         await workbook.xlsx.readFile(excelFilePath);
-        const worksheet = workbook.worksheets[0]; // Первый лист в файле
+        const worksheet = workbook.worksheets[0]; 
 
-        // Находим первую пустую строку в столбце A
-        let rowNumber = worksheet.lastRow ? worksheet.lastRow.number + 1 : 2;
+
+        let rowNumber = worksheet.lastRow ? worksheet.lastRow.number + 1 : 1;
         while (worksheet.getRow(rowNumber).getCell(1).value) {
             rowNumber++;
         }
 
-        // Записываем URL и цену
-        const newRow = worksheet.getRow(rowNumber);
-        newRow.getCell(1).value = url;  // URL в столбец A
-        newRow.getCell(2).value = price;  // Цена в столбец B
 
-        // Сохраняем изменения в файл
+        const newRow = worksheet.getRow(rowNumber);
+        newRow.getCell(1).value = url;  
+        newRow.getCell(2).value = price; 
+
+
         await workbook.xlsx.writeFile(excelFilePath);
         console.log('URL и цена добавлены в Excel файл.');
     } catch (error) {
@@ -35,18 +36,38 @@ async function appendToExcel(url, price) {
     }
 }
 
-// Словарь для временного хранения данных о ссылках и ценах для каждого chatId
+
 let currentUrl = '';
 let expectingPrice = false;
 
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
 
-    // Обработка команды /sendfile для отправки Excel файла
+    if (userStates[chatId] === 'awaitingConfirmationToDelete') {
+        if (msg.text.toLowerCase() === 'да') {
+            // Удаление содержимого файла
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Data');
+            await workbook.xlsx.writeFile(excelFilePath);
+            bot.sendMessage(chatId, 'Все данные удалены.');
+            userStates[chatId] = null; // Сброс состояния пользователя
+        } else {
+            bot.sendMessage(chatId, 'Удаление отменено.');
+            userStates[chatId] = null; // Сброс состояния пользователя
+        }
+        return;
+    }
+
+    if (msg.text === '/deleteall') {
+        bot.sendMessage(chatId, 'Точно удалить все значения? Ответьте "Да" или "Нет".');
+        userStates[chatId] = 'awaitingConfirmationToDelete'; // Установка состояния ожидания подтверждения
+        return;
+    }
+
     if (msg.text === '/sendfile') {
-         // Проверяем, существует ли файл
+
          if (fs.existsSync(excelFilePath)) {
-            // Отправляем файл
+
             bot.sendDocument(chatId, excelFilePath).then(() => {
               console.log('Файл успешно отправлен');
             }).catch((error) => {
@@ -57,18 +78,18 @@ bot.on('message', async (msg) => {
             bot.sendMessage(chatId, 'Файл еще не создан.');
           }
     } else   if (expectingPrice) {
-        // Проверяем, является ли сообщение ценой
+
         const price = parseFloat(msg.text);
         if (!isNaN(price)) {
             await appendToExcel(currentUrl, price);
             bot.sendMessage(chatId, 'URL и цена успешно сохранены.');
-            expectingPrice = false; // Сбрасываем ожидание цены
+            expectingPrice = false; 
         } else {
             bot.sendMessage(chatId, 'Пожалуйста, введите корректную цену.');
         }
     } else if (msg.text.startsWith('http')) {
-        currentUrl = msg.text; // Сохраняем URL
-        expectingPrice = true; // Устанавливаем ожидание цены
+        currentUrl = msg.text; 
+        expectingPrice = true; 
         bot.sendMessage(chatId, 'Скиньте цену для этой ссылки.');
     } else {
         bot.sendMessage(chatId, 'Пожалуйста, сначала отправьте ссылку.');
