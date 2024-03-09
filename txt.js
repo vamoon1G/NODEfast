@@ -43,14 +43,20 @@ let expectingPrice = false;
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
 
+    if (msg.text === '/cancel' && userStates[chatId]?.expectingPrice) {
+        delete userStates[chatId];
+        bot.sendMessage(chatId, 'Ввод отменен. Вы можете отправить новую ссылку.');
+        return;
+    }
+
     if (userStates[chatId] === 'awaitingConfirmationToDelete') {
         if (msg.text.toLowerCase() === 'да') {
             // Удаление содержимого файла
             const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Data');
             await workbook.xlsx.writeFile(excelFilePath);
             bot.sendMessage(chatId, 'Все данные удалены.');
-            userStates[chatId] = null; // Сброс состояния пользователя
+            delete userStates[chatId];
+
         } else {
             bot.sendMessage(chatId, 'Удаление отменено.');
             userStates[chatId] = null; // Сброс состояния пользователя
@@ -77,20 +83,20 @@ bot.on('message', async (msg) => {
           } else {
             bot.sendMessage(chatId, 'Файл еще не создан.');
           }
-    } else   if (expectingPrice) {
-
+    } else if (userStates[chatId]?.expectingPrice) {
+        // Обработка ввода цены
         const price = parseFloat(msg.text);
         if (!isNaN(price)) {
-            await appendToExcel(currentUrl, price);
+            await appendToExcel(userStates[chatId].url, price);
             bot.sendMessage(chatId, 'URL и цена успешно сохранены.');
-            expectingPrice = false; 
+            delete userStates[chatId]; // Сброс состояния пользователя после сохранения
         } else {
-            bot.sendMessage(chatId, 'Пожалуйста, введите корректную цену.');
+            bot.sendMessage(chatId, 'Пожалуйста, введите корректную цену или отправьте /cancel для отмены.');
         }
     } else if (msg.text.startsWith('http')) {
-        currentUrl = msg.text; 
-        expectingPrice = true; 
-        bot.sendMessage(chatId, 'Скиньте цену для этой ссылки.');
+        // Установка состояния ожидания цены после получения ссылки
+        userStates[chatId] = { url: msg.text, expectingPrice: true };
+        bot.sendMessage(chatId, 'Скиньте цену для этой ссылки. Используйте /cancel для отмены.');
     } else {
         bot.sendMessage(chatId, 'Пожалуйста, сначала отправьте ссылку.');
     }
