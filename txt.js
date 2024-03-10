@@ -9,28 +9,54 @@ const bot = new TelegramBot(token, { polling: true });
 
 const userStates = {};
 
-const excelFilePath = path.join(__dirname, 'f.xlsx');
+const templateExcelFilePath = path.join(__dirname, 'f.xlsx'); // Шаблон
+const workingExcelFilePath = path.join(__dirname, 'working_f.xlsx'); // Рабочая копия
+
+async function createNewWorkingFileFromTemplate() {
+    if (fs.existsSync(workingExcelFilePath)) {
+        fs.unlinkSync(workingExcelFilePath); // Удаляем существующий рабочий файл, если он есть
+    }
+    fs.copyFileSync(templateExcelFilePath, workingExcelFilePath); // Создаём новую копию из шаблона
+}
 
 async function appendToExcel(url, price) {
+
+    if (!fs.existsSync(workingExcelFilePath)) {
+        createNewWorkingFileFromTemplate();
+    }
+
     const workbook = new ExcelJS.Workbook();
     try {
-        await workbook.xlsx.readFile(excelFilePath);
+        await workbook.xlsx.readFile(workingExcelFilePath);
         const worksheet = workbook.worksheets[0]; 
 
+
+        let urlExists = false;
+        worksheet.eachRow((row) => {
+            if (row.getCell(1).value === url) {
+                urlExists = true;
+            }
+        });
+
+
+        if (urlExists) {
+            console.error('URL уже существует в файле Excel.');
+            return false; // Возвращаем false, чтобы сигнализировать, что добавление не произведено
+        }
 
         let rowNumber = worksheet.lastRow ? worksheet.lastRow.number + 1 : 1;
         while (worksheet.getRow(rowNumber).getCell(1).value) {
             rowNumber++;
         }
 
-
         const newRow = worksheet.getRow(rowNumber);
         newRow.getCell(1).value = url;  
         newRow.getCell(2).value = price; 
 
 
-        await workbook.xlsx.writeFile(excelFilePath);
+        await workbook.xlsx.writeFile(workingExcelFilePath);
         console.log('URL и цена добавлены в Excel файл.');
+        return true; 
     } catch (error) {
         console.error('Ошибка при добавлении данных в Excel:', error);
     }
@@ -39,6 +65,13 @@ async function appendToExcel(url, price) {
 
 let currentUrl = '';
 let expectingPrice = false;
+
+
+async function deleteWorkingFile() {
+    if (fs.existsSync(workingExcelFilePath)) {
+        fs.unlinkSync(workingExcelFilePath); // Удаляем рабочий файл
+    }
+}
 
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
@@ -51,45 +84,46 @@ bot.on('message', async (msg) => {
 
     if (userStates[chatId] === 'awaitingConfirmationToDelete') {
         if (msg.text.toLowerCase() === 'да') {
-            // Удаление содержимого файла
-            const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.writeFile(excelFilePath);
-            bot.sendMessage(chatId, 'Все данные удалены.');
+            await deleteWorkingFile(); // Удаляем рабочий файл
+            bot.sendMessage(chatId, 'Все данные удалены. Начните заново.');
             delete userStates[chatId];
-
-        } else {
+        } else if (msg.text.toLowerCase() === 'нет') {
             bot.sendMessage(chatId, 'Удаление отменено.');
-            userStates[chatId] = null; // Сброс состояния пользователя
+            delete userStates[chatId];
         }
         return;
     }
 
     if (msg.text === '/deleteall') {
+        userStates[chatId] = 'awaitingConfirmationToDelete';
         bot.sendMessage(chatId, 'Точно удалить все значения? Ответьте "Да" или "Нет".');
-        userStates[chatId] = 'awaitingConfirmationToDelete'; // Установка состояния ожидания подтверждения
         return;
     }
 
     if (msg.text === '/sendfile') {
 
-         if (fs.existsSync(excelFilePath)) {
+         if (fs.existsSync(workingExcelFilePath)) {
 
-            bot.sendDocument(chatId, excelFilePath).then(() => {
+            bot.sendDocument(chatId, workingExcelFilePath).then(() => {
               console.log('Файл успешно отправлен');
             }).catch((error) => {
               console.error('Ошибка при отправке файла:', error);
               bot.sendMessage(chatId, 'Произошла ошибка при отправке файла.');
             });
           } else {
-            bot.sendMessage(chatId, 'Файл еще не создан.');
+            bot.sendMessage(chatId, 'Файл еще не создан или был удален.');
           }
     } else if (userStates[chatId]?.expectingPrice) {
         // Обработка ввода цены
         const price = parseFloat(msg.text);
         if (!isNaN(price)) {
-            await appendToExcel(userStates[chatId].url, price);
-            bot.sendMessage(chatId, 'URL и цена успешно сохранены.');
-            delete userStates[chatId]; // Сброс состояния пользователя после сохранения
+            const success = await appendToExcel(userStates[chatId].url, price);
+            if (success) {
+                bot.sendMessage(chatId, 'URL и цена успешно сохранены.');
+            } else {
+                bot.sendMessage(chatId, 'Этот URL уже существует в файле. Введите другой URL или используйте /cancel для отмены.');
+            }
+            delete userStates[chatId];
         } else {
             bot.sendMessage(chatId, 'Пожалуйста, введите корректную цену или отправьте /cancel для отмены.');
         }
