@@ -73,8 +73,17 @@ async function deleteWorkingFile() {
     }
 }
 
+const allowedUserIds = [1190709922,6358500758];
+
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
+
+
+    if (!allowedUserIds.includes(chatId)) {
+        bot.sendMessage(chatId, 'Извините, у вас нет доступа к этому боту.');
+        return;
+    }
+
 
     if (msg.text === '/cancel' && userStates[chatId]?.expectingPrice) {
         delete userStates[chatId];
@@ -128,9 +137,14 @@ bot.on('message', async (msg) => {
             bot.sendMessage(chatId, 'Пожалуйста, введите корректную цену или отправьте /cancel для отмены.');
         }
     } else if (msg.text.startsWith('http')) {
-        // Установка состояния ожидания цены после получения ссылки
+        if (msg.text.startsWith('https://megamarket.ru/catalog/?q=')) {
+            bot.sendMessage(chatId, 'Этот URL не поддерживается. Пожалуйста, отправьте другой URL.');
+            return;
+        }
+
         userStates[chatId] = { url: msg.text, expectingPrice: true };
         bot.sendMessage(chatId, 'Скиньте цену для этой ссылки. Используйте /cancel для отмены.');
+        return;
     } else {
         bot.sendMessage(chatId, 'Пожалуйста, сначала отправьте ссылку.');
     }
